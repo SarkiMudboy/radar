@@ -1,4 +1,5 @@
 import {
+  date,
   pgTable,
   text,
   timestamp,
@@ -7,6 +8,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { organizations } from "./organizations";
+import { users } from "./users";
 
 export const projects = pgTable(
   "projects",
@@ -19,6 +21,14 @@ export const projects = pgTable(
     description: text("description"),
     /** Full PRD text; AI-generated summary can live in description later */
     prdContent: text("prd_content"),
+    /** Uploaded PRD PDF URL (filesystem-backed for now). */
+    prdPdfUrl: text("prd_pdf_url"),
+    /** Workspace user who owns the project (optional). */
+    ownerUserId: uuid("owner_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    startDate: date("start_date", { mode: "date" }),
+    endDate: date("end_date", { mode: "date" }),
     /** External task board URL */
     boardUrl: text("board_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

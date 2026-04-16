@@ -1,7 +1,9 @@
 import { asc } from "drizzle-orm";
 import Link from "next/link";
+import Image from "next/image";
 
 import { AddOrganizationDialog } from "@/components/organizations/add-organization-dialog";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Card,
   CardContent,
@@ -24,11 +26,14 @@ export default async function HomePage() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Organizations</h1>
-          <p className="text-muted-foreground mt-1 text-sm mt-7">
+          <p className="text-muted-foreground mt-1 text-sm">
             Workspaces in Radar. Organizations are used to group workspaces.
           </p>
         </div>
-        <AddOrganizationDialog />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <AddOrganizationDialog />
+        </div>
       </header>
 
       <Card>
@@ -47,12 +52,25 @@ export default async function HomePage() {
                 <li key={org.id}>
                   <Link
                     href={`/organizations/${org.slug}`}
-                    className="flex flex-col gap-0.5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/60"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-muted/60"
                   >
-                    <span className="font-medium">{org.name}</span>
-                    <span className="text-muted-foreground font-mono text-xs">
-                      {org.slug}
-                    </span>
+                    {org.logoUrl ? (
+                      <Image
+                        src={org.logoUrl}
+                        alt={`${org.name} logo`}
+                        width={32}
+                        height={32}
+                        className="size-8 rounded-md border object-cover"
+                      />
+                    ) : (
+                      <div className="size-8 rounded-md border bg-muted" />
+                    )}
+                    <div className="flex min-w-0 flex-col">
+                      <span className="font-medium leading-5">{org.name}</span>
+                      <span className="text-muted-foreground font-mono text-xs">
+                        {org.slug}
+                      </span>
+                    </div>
                   </Link>
                 </li>
               ))}

@@ -18,6 +18,7 @@ export async function createOrganization(
 ): Promise<OrganizationActionState> {
   const name = formData.get("name")?.toString().trim() ?? "";
   const slugRaw = formData.get("slug")?.toString().trim() ?? "";
+  const logoUrl = formData.get("logoUrl")?.toString().trim() || null;
 
   if (!name) {
     return { error: "Name is required." };
@@ -29,7 +30,7 @@ export async function createOrganization(
   }
 
   try {
-    await db.insert(organizations).values({ name, slug });
+    await db.insert(organizations).values({ name, slug, logoUrl });
     revalidatePath("/");
     return { success: true };
   } catch (err) {
@@ -53,6 +54,7 @@ export async function updateOrganization(
   const currentSlug = formData.get("currentSlug")?.toString().trim() ?? "";
   const name = formData.get("name")?.toString().trim() ?? "";
   const slugRaw = formData.get("slug")?.toString().trim() ?? "";
+  const logoUrl = formData.get("logoUrl")?.toString().trim() || null;
 
   if (!id || !name) {
     return { error: "Name is required." };
@@ -69,6 +71,7 @@ export async function updateOrganization(
       .set({
         name,
         slug,
+        logoUrl,
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, id));
