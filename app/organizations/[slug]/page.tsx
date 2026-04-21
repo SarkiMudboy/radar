@@ -56,6 +56,7 @@ export default async function OrganizationPage({ params }: PageProps) {
       id: users.id,
       name: users.name,
       email: users.email,
+      profileImageUrl: users.profileImageUrl,
     })
     .from(users)
     .where(eq(users.organizationId, org.id))

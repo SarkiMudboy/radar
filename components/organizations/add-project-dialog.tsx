@@ -97,6 +97,27 @@ function AddProjectForm({
           ))}
         </select>
       </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="project-collaborators">Collaborators (optional)</Label>
+        <select
+          id="project-collaborators"
+          name="collaboratorIds"
+          multiple
+          className={cn(
+            "min-h-24 w-full rounded-lg border border-input bg-transparent p-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30",
+          )}
+          disabled={pending || uploading || users.length === 0}
+        >
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name} ({u.email})
+            </option>
+          ))}
+        </select>
+        <p className="text-muted-foreground text-xs">
+          Hold Ctrl/Cmd to select multiple.
+        </p>
+      </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor="project-start-date">Start date (optional)</Label>

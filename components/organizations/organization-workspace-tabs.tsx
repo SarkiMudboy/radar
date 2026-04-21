@@ -17,12 +17,14 @@ export type WorkspaceProject = {
   boardUrl: string | null;
   prdPdfUrl: string | null;
   ownerName: string | null;
+  organizationSlug?: string;
 };
 
 export type WorkspaceUser = {
   id: string;
   name: string;
   email: string;
+  profileImageUrl?: string | null;
 };
 
 export function OrganizationWorkspaceTabs({
@@ -65,7 +67,12 @@ export function OrganizationWorkspaceTabs({
                 className="flex min-h-16 flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium">{p.name}</p>
+                  <a
+                    href={`/organizations/${organizationSlug}/projects/${p.id}`}
+                    className="font-medium hover:underline underline-offset-4"
+                  >
+                    {p.name}
+                  </a>
                   {p.ownerName ? (
                     <p className="text-muted-foreground mt-0.5 text-sm">
                       Owner: {p.ownerName}

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { db, projects } from "@/db";
+import { db, projectCollaborators, projects } from "@/db";
 
 export type ProjectActionState = {
   error?: string;
@@ -23,6 +23,10 @@ export async function createProject(
   const prdPdfUrl = formData.get("prdPdfUrl")?.toString().trim() || null;
   const ownerUserIdRaw = formData.get("ownerUserId")?.toString().trim() || "";
   const ownerUserId = ownerUserIdRaw || null;
+  const collaboratorIds = formData
+    .getAll("collaboratorIds")
+    .map((v) => v.toString().trim())
+    .filter(Boolean);
   const startDateRaw = formData.get("startDate")?.toString().trim() || "";
   const endDateRaw = formData.get("endDate")?.toString().trim() || "";
   const startDate = startDateRaw ? new Date(startDateRaw) : null;
@@ -36,7 +40,9 @@ export async function createProject(
   }
 
   try {
-    await db.insert(projects).values({
+    const [newProject] = await db
+      .insert(projects)
+      .values({
       organizationId,
       name,
       description,
@@ -45,7 +51,18 @@ export async function createProject(
       ownerUserId,
       startDate,
       endDate,
-    });
+      })
+      .returning({ id: projects.id });
+
+    const projectId = newProject?.id;
+    if (projectId) {
+      const ids = new Set<string>(collaboratorIds);
+      if (ownerUserId) ids.add(ownerUserId);
+      const rows = [...ids].map((userId) => ({ projectId, userId }));
+      if (rows.length > 0) {
+        await db.insert(projectCollaborators).values(rows).onConflictDoNothing();
+      }
+    }
   } catch (err) {
     const code =
       err && typeof err === "object" && "code" in err

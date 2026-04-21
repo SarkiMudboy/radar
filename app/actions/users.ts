@@ -21,6 +21,8 @@ export async function createOrgUser(
   const name = formData.get("name")?.toString().trim() ?? "";
   const email = formData.get("email")?.toString().trim() ?? "";
   const roleKey = formData.get("roleKey")?.toString().trim() ?? "";
+  const profileImageUrl =
+    formData.get("profileImageUrl")?.toString().trim() || null;
 
   if (!organizationId || !organizationSlug) {
     return { error: "Missing organization." };
@@ -46,6 +48,7 @@ export async function createOrgUser(
         organizationId,
         name,
         email,
+        profileImageUrl,
       })
       .returning({ id: users.id });
 
