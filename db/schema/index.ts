@@ -4,4 +4,6 @@ export * from "./users";
 export * from "./user-roles";
 export * from "./projects";
 export * from "./project-collaborators";
+export * from "./milestones";
+export * from "./tasks";
 export * from "./relations";

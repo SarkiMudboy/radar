@@ -1,5 +1,13 @@
 "use client";
 
+import Link from "next/link";
+import { ChevronRightIcon } from "lucide-react";
+
+import {
+  Card,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import {
   Tabs,
   TabsContent,
@@ -17,7 +25,6 @@ export type WorkspaceProject = {
   boardUrl: string | null;
   prdPdfUrl: string | null;
   ownerName: string | null;
-  organizationSlug?: string;
 };
 
 export type WorkspaceUser = {
@@ -60,55 +67,71 @@ export function OrganizationWorkspaceTabs({
             No projects yet. Add one to get started.
           </p>
         ) : (
-          <ul className="divide-y rounded-lg border">
+          <div className="grid gap-3">
             {projects.map((p) => (
-              <li
+              <Card
                 key={p.id}
-                className="flex min-h-16 flex-col gap-1 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                size="sm"
+                className="relative gap-0 overflow-hidden rounded-md border border-border py-0 shadow-none ring-0 transition-all duration-200 ease-out hover:-translate-y-px hover:border-primary/50 hover:bg-muted/15 hover:shadow-md hover:shadow-primary/10"
               >
-                <div className="min-w-0 flex-1">
-                  <a
-                    href={`/organizations/${organizationSlug}/projects/${p.id}`}
-                    className="font-medium hover:underline underline-offset-4"
-                  >
+                <Link
+                  href={`/organizations/${organizationSlug}/projects/${p.id}`}
+                  className="absolute inset-0 z-5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`Open project ${p.name}`}
+                >
+                  <span className="sr-only">Open project {p.name}</span>
+                </Link>
+
+                <CardHeader className="pointer-events-none relative z-10 gap-2 px-4 pt-4 pb-3">
+                  <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+                    Project
+                  </p>
+                  <div className="text-base leading-snug font-semibold text-foreground">
                     {p.name}
-                  </a>
+                  </div>
                   {p.ownerName ? (
-                    <p className="text-muted-foreground mt-0.5 text-sm">
+                    <p className="text-muted-foreground text-xs">
                       Owner: {p.ownerName}
                     </p>
                   ) : null}
-                  {p.description ? (
-                    <p className="text-muted-foreground mt-0.5 line-clamp-2 text-sm">
-                      {p.description}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex shrink-0 items-center justify-end gap-3 sm:min-w-20">
-                  {p.prdPdfUrl ? (
-                    <a
-                      href={p.prdPdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary text-sm underline-offset-4 hover:underline"
-                    >
-                      PRD
-                    </a>
-                  ) : null}
-                  {p.boardUrl ? (
-                    <a
-                      href={p.boardUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary text-sm underline-offset-4 hover:underline"
-                    >
-                      Board
-                    </a>
-                  ) : null}
-                </div>
-              </li>
+                  <p className="text-muted-foreground line-clamp-2 min-h-10 text-sm">
+                    {p.description || "No description."}
+                  </p>
+                </CardHeader>
+
+                <CardFooter className="relative z-20 flex flex-wrap items-center justify-between gap-2 border-border/60 border-t bg-background/40 px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {p.prdPdfUrl ? (
+                      <a
+                        href={p.prdPdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="border-border text-foreground hover:border-primary/60 hover:text-primary inline-flex items-center gap-1 rounded border bg-transparent px-2 py-1 text-xs font-medium transition-colors"
+                      >
+                        PRD
+                        <ChevronRightIcon className="size-3" />
+                      </a>
+                    ) : null}
+                    {p.boardUrl ? (
+                      <a
+                        href={p.boardUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="border-border text-foreground hover:border-primary/60 hover:text-primary inline-flex items-center gap-1 rounded border bg-transparent px-2 py-1 text-xs font-medium transition-colors"
+                      >
+                        Board
+                        <ChevronRightIcon className="size-3" />
+                      </a>
+                    ) : null}
+                  </div>
+                  <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                    Details
+                    <ChevronRightIcon className="size-3" />
+                  </span>
+                </CardFooter>
+              </Card>
             ))}
-          </ul>
+          </div>
         )}
       </TabsContent>
 

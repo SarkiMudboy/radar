@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,7 +10,17 @@ import {
   AvatarGroupCount,
   AvatarImage,
 } from "@/components/ui/avatar";
-import { db, organizations, projectCollaborators, projects, users } from "@/db";
+import { EditProjectDialog } from "@/components/projects/edit-project-dialog";
+import { ProjectMilestonesSection } from "@/components/projects/project-milestones-section";
+import {
+  db,
+  milestones,
+  organizations,
+  projectCollaborators,
+  projects,
+  users,
+} from "@/db";
+import type { MilestoneStatus } from "@/lib/milestone-status";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +74,24 @@ export default async function ProjectDetailPage({ params }: PageProps) {
   });
   if (!project) notFound();
 
+  const orgUsers = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      profileImageUrl: users.profileImageUrl,
+    })
+    .from(users)
+    .where(eq(users.organizationId, org.id))
+    .orderBy(asc(users.name));
+
+  const collaboratorIdRows = await db
+    .select({ userId: projectCollaborators.userId })
+    .from(projectCollaborators)
+    .where(eq(projectCollaborators.projectId, project.id));
+
+  const collaboratorUserIds = collaboratorIdRows.map((r) => r.userId);
+
   const collaborators = await db
     .select({
       id: users.id,
@@ -78,6 +106,28 @@ export default async function ProjectDetailPage({ params }: PageProps) {
   const visible = collaborators.slice(0, 5);
   const extra = Math.max(0, collaborators.length - visible.length);
 
+  const milestoneRows = await db
+    .select({
+      id: milestones.id,
+      name: milestones.name,
+      description: milestones.description,
+      timeline: milestones.timeline,
+      status: milestones.status,
+    })
+    .from(milestones)
+    .where(
+      and(
+        eq(milestones.projectId, project.id),
+        isNull(milestones.archivedAt),
+      ),
+    )
+    .orderBy(asc(milestones.createdAt));
+
+  const milestoneList = milestoneRows.map((row) => ({
+    ...row,
+    status: row.status as MilestoneStatus,
+  }));
+
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">
       <Link
@@ -87,14 +137,31 @@ export default async function ProjectDetailPage({ params }: PageProps) {
         ← {org.name}
       </Link>
 
-      <header className="mt-6">
-        <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Duration:{" "}
-          <span className="font-medium text-foreground">
-            {formatDateRange(project.startDate, project.endDate)}
-          </span>
-        </p>
+      <header className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Duration:{" "}
+            <span className="font-medium text-foreground">
+              {formatDateRange(project.startDate, project.endDate)}
+            </span>
+          </p>
+        </div>
+        <EditProjectDialog
+          organizationSlug={org.slug}
+          project={{
+            id: project.id,
+            name: project.name,
+            description: project.description,
+            boardUrl: project.boardUrl,
+            prdPdfUrl: project.prdPdfUrl,
+            ownerUserId: project.ownerUserId,
+            startDate: project.startDate,
+            endDate: project.endDate,
+          }}
+          collaboratorUserIds={collaboratorUserIds}
+          users={orgUsers}
+        />
       </header>
 
       <section className="mt-8 space-y-6">
@@ -148,7 +215,12 @@ export default async function ProjectDetailPage({ params }: PageProps) {
           )}
         </div>
       </section>
+
+      <ProjectMilestonesSection
+        organizationSlug={org.slug}
+        projectId={project.id}
+        milestones={milestoneList}
+      />
     </div>
   );
 }
-
