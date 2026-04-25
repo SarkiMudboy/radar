@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useId, useState } from "react";
+import { useActionState, useCallback, useId, useState } from "react";
 
 import { updateMilestone } from "@/app/actions/milestones";
+import { useServerActionFeedback } from "@/hooks/use-server-action-feedback";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -53,11 +54,10 @@ function EditMilestoneFormBody({
   const statusId = useId();
   const [state, formAction, pending] = useActionState(updateMilestone, null);
 
-  useEffect(() => {
-    if (state?.success) {
-      onSuccess();
-    }
-  }, [state?.success, onSuccess]);
+  useServerActionFeedback(state, {
+    successMessage: "Milestone updated",
+    onSuccess,
+  });
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -112,11 +112,6 @@ function EditMilestoneFormBody({
           ))}
         </select>
       </div>
-      {state?.error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {state.error}
-        </p>
-      ) : null}
       <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button type="submit" disabled={pending} className="w-full sm:w-auto">
           {pending ? "Saving…" : "Save changes"}

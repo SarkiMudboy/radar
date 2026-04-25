@@ -4,6 +4,7 @@ import { useActionState, useCallback, useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { createTask } from "@/app/actions/tasks";
+import { useServerActionFeedback } from "@/hooks/use-server-action-feedback";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -64,12 +65,15 @@ function AddTaskForm({
 
   const [state, formAction, pending] = useActionState(createTask, null);
 
-  useEffect(() => {
-    if (state?.success) {
-      router.refresh();
-      onSuccess();
-    }
-  }, [state?.success, router, onSuccess]);
+  const handleCreated = useCallback(() => {
+    router.refresh();
+    onSuccess();
+  }, [router, onSuccess]);
+
+  useServerActionFeedback(state, {
+    successMessage: "Task created",
+    onSuccess: handleCreated,
+  });
 
   return (
     <form action={formAction} className="mt-2 flex flex-col gap-4">
@@ -183,11 +187,6 @@ function AddTaskForm({
           disabled={pending}
         />
       </div>
-      {state?.error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {state.error}
-        </p>
-      ) : null}
       <div className="flex justify-end gap-2 pt-2">
         <Button
           type="button"
@@ -236,7 +235,7 @@ export function AddTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[min(90dvh,48rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add task · {groupLabel(lockedStatus)}</DialogTitle>
           <DialogDescription>

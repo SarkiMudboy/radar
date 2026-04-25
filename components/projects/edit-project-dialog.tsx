@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useCallback, useEffect, useId, useState } from "react";
+import { useActionState, useCallback, useId, useState } from "react";
 
 import { updateProject } from "@/app/actions/projects";
+import { useServerActionFeedback } from "@/hooks/use-server-action-feedback";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -56,11 +57,10 @@ function EditProjectForm({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
 
-  useEffect(() => {
-    if (state?.success) {
-      onSuccess();
-    }
-  }, [state?.success, onSuccess]);
+  useServerActionFeedback(state, {
+    successMessage: "Project updated",
+    onSuccess,
+  });
 
   async function uploadPrd(file: File) {
     setUploading(true);
@@ -237,11 +237,6 @@ function EditProjectForm({
           disabled={pending || uploading}
         />
       </div>
-      {state?.error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {state.error}
-        </p>
-      ) : null}
       <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button
           type="submit"

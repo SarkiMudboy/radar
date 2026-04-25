@@ -3,7 +3,6 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { AddOrganizationDialog } from "@/components/organizations/add-organization-dialog";
-import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Card,
   CardContent,
@@ -31,7 +30,6 @@ export default async function HomePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <AddOrganizationDialog />
         </div>
       </header>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useId, useState } from "react";
+import { useActionState, useCallback, useId, useState } from "react";
 
 import { createMilestone } from "@/app/actions/milestones";
+import { useServerActionFeedback } from "@/hooks/use-server-action-feedback";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,11 +29,10 @@ function AddMilestoneForm({
   const statusId = useId();
   const [state, formAction, pending] = useActionState(createMilestone, null);
 
-  useEffect(() => {
-    if (state?.success) {
-      onSuccess();
-    }
-  }, [state?.success, onSuccess]);
+  useServerActionFeedback(state, {
+    successMessage: "Milestone created",
+    onSuccess,
+  });
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -45,11 +45,6 @@ function AddMilestoneForm({
         statusId={statusId}
         disabled={pending}
       />
-      {state?.error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {state.error}
-        </p>
-      ) : null}
       <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button type="submit" disabled={pending} className="w-full sm:w-auto">
           {pending ? "Creating…" : "Create milestone"}

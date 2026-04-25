@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 
 import { deleteOrganization } from "@/app/actions/organizations";
+import { useServerActionFeedback } from "@/hooks/use-server-action-feedback";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -26,6 +27,10 @@ export function DeleteOrganizationDialog({
     null,
   );
 
+  useServerActionFeedback(state, {
+    successMessage: "Organization deleted",
+  });
+
   return (
     <AlertDialog>
       <AlertDialogTrigger nativeButton={false} render={<Button variant="outline" type="button" />}>
@@ -44,11 +49,6 @@ export function DeleteOrganizationDialog({
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {state?.error ? (
-            <p className="text-destructive text-sm" role="alert">
-              {state.error}
-            </p>
-          ) : null}
           <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <AlertDialogCancel type="button" disabled={pending}>
               Cancel

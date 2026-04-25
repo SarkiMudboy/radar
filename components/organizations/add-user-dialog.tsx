@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useCallback, useEffect, useId, useState } from "react";
+import { useActionState, useCallback, useId, useState } from "react";
 
 import { createOrgUser } from "@/app/actions/users";
+import { useServerActionFeedback } from "@/hooks/use-server-action-feedback";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,11 +34,10 @@ function AddUserForm({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
 
-  useEffect(() => {
-    if (state?.success) {
-      onSuccess();
-    }
-  }, [state?.success, onSuccess]);
+  useServerActionFeedback(state, {
+    successMessage: "User added",
+    onSuccess,
+  });
 
   async function uploadAvatar(file: File) {
     setUploading(true);
@@ -151,11 +151,6 @@ function AddUserForm({
           autoComplete="email"
         />
       </div>
-      {state?.error ? (
-        <p className="text-destructive text-sm" role="alert">
-          {state.error}
-        </p>
-      ) : null}
       <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button
           type="submit"
