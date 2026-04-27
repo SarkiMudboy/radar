@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -395,9 +396,12 @@ function TaskBoardTable({
                       <TaskStatusGlyph status={task.status} />
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">
+                      <Link
+                        href={`/organizations/${organizationSlug}/projects/${projectId}/tasks/${task.id}`}
+                        className="truncate font-medium text-foreground hover:underline"
+                      >
                         {task.title}
-                      </p>
+                      </Link>
                       {task.tags && task.tags.length > 0 ? (
                         <p className="text-muted-foreground mt-0.5 truncate text-xs">
                           {task.tags.join(" · ")}
