@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AppNavbar } from "@/components/app-navbar";
 import { AppToaster } from "@/components/app-toaster";
+import { SessionProvider } from "@/components/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { getAppSession } from "@/lib/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,11 +22,13 @@ export const metadata: Metadata = {
   description: "Project planning and tracking",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getAppSession();
+
   return (
     <html
       lang="en"
@@ -34,17 +37,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-border bg-background/85 px-4 py-2.5 backdrop-blur-sm supports-backdrop-filter:bg-background/70">
-            <Link
-              href="/"
-              className="text-sm font-semibold tracking-tight text-foreground hover:underline"
-            >
-              Radar
-            </Link>
-            <ThemeToggle />
-          </header>
-          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
-          <AppToaster />
+          <SessionProvider session={session}>
+            <AppNavbar session={session} />
+            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+            <AppToaster />
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

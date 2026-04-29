@@ -31,6 +31,12 @@ export const projects = pgTable(
     endDate: date("end_date", { mode: "date" }),
     /** External task board URL */
     boardUrl: text("board_url"),
+    /** Public website or product URL for this project. */
+    projectUrl: text("project_url"),
+    /**
+     * Linked GitHub repository as `owner/repo` (for future automation, e.g. branches from tasks).
+     */
+    githubRepoFullName: text("github_repo_full_name"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

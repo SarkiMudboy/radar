@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { CreateBranchDialog } from "@/components/projects/create-branch-dialog";
 import { DeleteTaskDialog } from "@/components/projects/delete-task-dialog";
 import { EditTaskDialog, type EditableTask } from "@/components/projects/edit-task-dialog";
 import { MilestoneStatusBadge } from "@/components/milestones/milestone-status-badge";
@@ -184,6 +185,15 @@ export default async function TaskDetailPage({ params }: PageProps) {
           ← Tasks
         </Link>
         <div className="flex flex-wrap items-center gap-2">
+          <CreateBranchDialog
+            organizationSlug={org.slug}
+            taskId={taskRow.id}
+            taskTitle={taskRow.title}
+            tags={taskRow.tags ?? null}
+            repositories={
+              project.githubRepoFullName ? [project.githubRepoFullName] : []
+            }
+          />
           <Button type="button" variant="outline" render={<Link href={subtasksHref} />}>
             Tasks
             <span className="text-muted-foreground ml-1 text-xs tabular-nums">

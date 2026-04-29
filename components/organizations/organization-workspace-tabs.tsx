@@ -23,6 +23,8 @@ export type WorkspaceProject = {
   name: string;
   description: string | null;
   boardUrl: string | null;
+  projectUrl: string | null;
+  githubRepoFullName: string | null;
   prdPdfUrl: string | null;
   ownerName: string | null;
 };
@@ -106,9 +108,34 @@ export function OrganizationWorkspaceTabs({
                         href={p.prdPdfUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="border-border text-foreground hover:border-primary/60 hover:text-primary inline-flex items-center gap-1 rounded border bg-transparent px-2 py-1 text-xs font-medium transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                        className="border-border text-foreground hover:border-primary/60 hover:text-primary pointer-events-auto inline-flex items-center gap-1 rounded border bg-transparent px-2 py-1 text-xs font-medium transition-colors"
                       >
                         PRD
+                        <ChevronRightIcon className="size-3" />
+                      </a>
+                    ) : null}
+                    {p.projectUrl ? (
+                      <a
+                        href={p.projectUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="border-border text-foreground hover:border-primary/60 hover:text-primary pointer-events-auto inline-flex items-center gap-1 rounded border bg-transparent px-2 py-1 text-xs font-medium transition-colors"
+                      >
+                        Site
+                        <ChevronRightIcon className="size-3" />
+                      </a>
+                    ) : null}
+                    {p.githubRepoFullName ? (
+                      <a
+                        href={`https://github.com/${p.githubRepoFullName}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="border-border text-foreground hover:border-primary/60 hover:text-primary pointer-events-auto inline-flex items-center gap-1 rounded border bg-transparent px-2 py-1 text-xs font-medium transition-colors"
+                      >
+                        GitHub
                         <ChevronRightIcon className="size-3" />
                       </a>
                     ) : null}
@@ -117,7 +144,8 @@ export function OrganizationWorkspaceTabs({
                         href={p.boardUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="border-border text-foreground hover:border-primary/60 hover:text-primary inline-flex items-center gap-1 rounded border bg-transparent px-2 py-1 text-xs font-medium transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                        className="border-border text-foreground hover:border-primary/60 hover:text-primary pointer-events-auto inline-flex items-center gap-1 rounded border bg-transparent px-2 py-1 text-xs font-medium transition-colors"
                       >
                         Board
                         <ChevronRightIcon className="size-3" />

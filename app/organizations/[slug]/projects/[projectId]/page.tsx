@@ -154,6 +154,8 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             name: project.name,
             description: project.description,
             boardUrl: project.boardUrl,
+            projectUrl: project.projectUrl,
+            githubRepoFullName: project.githubRepoFullName,
             prdPdfUrl: project.prdPdfUrl,
             ownerUserId: project.ownerUserId,
             startDate: project.startDate,
@@ -170,6 +172,40 @@ export default async function ProjectDetailPage({ params }: PageProps) {
           <p className="text-muted-foreground mt-1 text-sm">
             {project.description || "No description yet."}
           </p>
+        </div>
+
+        <div>
+          <h2 className="text-sm font-medium">Project URL</h2>
+          {project.projectUrl ? (
+            <a
+              href={project.projectUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary mt-1 inline-block text-sm underline-offset-4 hover:underline"
+            >
+              {project.projectUrl}
+            </a>
+          ) : (
+            <p className="text-muted-foreground mt-1 text-sm">Not set.</p>
+          )}
+        </div>
+
+        <div>
+          <h2 className="text-sm font-medium">GitHub repository</h2>
+          {project.githubRepoFullName ? (
+            <a
+              href={`https://github.com/${project.githubRepoFullName}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary mt-1 inline-block text-sm underline-offset-4 hover:underline"
+            >
+              {project.githubRepoFullName}
+            </a>
+          ) : (
+            <p className="text-muted-foreground mt-1 text-sm">
+              Not linked. Edit the project to choose a repository.
+            </p>
+          )}
         </div>
 
         <div>

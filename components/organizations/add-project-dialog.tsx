@@ -3,6 +3,7 @@
 import { useActionState, useCallback, useId, useState } from "react";
 
 import { createProject } from "@/app/actions/projects";
+import { GitHubRepoSelectField } from "@/components/projects/github-repo-select-field";
 import { useServerActionFeedback } from "@/hooks/use-server-action-feedback";
 import { Button } from "@/components/ui/button";
 import {
@@ -186,6 +187,20 @@ function AddProjectForm({
         ) : null}
       </div>
       <div className="flex flex-col gap-2">
+        <Label htmlFor="project-project-url">Project URL (optional)</Label>
+        <Input
+          id="project-project-url"
+          name="projectUrl"
+          type="url"
+          placeholder="https://product.example.com"
+          autoComplete="off"
+        />
+        <p className="text-muted-foreground text-xs">
+          Public website or product link for this project.
+        </p>
+      </div>
+      <GitHubRepoSelectField disabled={pending || uploading} defaultFullName={null} />
+      <div className="flex flex-col gap-2">
         <Label htmlFor="project-board-url">Board URL (optional)</Label>
         <Input
           id="project-board-url"
@@ -237,7 +252,7 @@ export function AddProjectDialog({
       <Button type="button" onClick={() => setOpen(true)}>
         Add project
       </Button>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[min(90dvh,44rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New project</DialogTitle>
           <DialogDescription>

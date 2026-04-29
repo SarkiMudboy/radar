@@ -43,6 +43,8 @@ export default async function OrganizationPage({ params }: PageProps) {
       name: projects.name,
       description: projects.description,
       boardUrl: projects.boardUrl,
+      projectUrl: projects.projectUrl,
+      githubRepoFullName: projects.githubRepoFullName,
       prdPdfUrl: projects.prdPdfUrl,
       ownerName: users.name,
     })

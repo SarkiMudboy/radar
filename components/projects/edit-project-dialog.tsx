@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useActionState, useCallback, useId, useState } from "react";
 
 import { updateProject } from "@/app/actions/projects";
+import { GitHubRepoSelectField } from "@/components/projects/github-repo-select-field";
 import { useServerActionFeedback } from "@/hooks/use-server-action-feedback";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,8 @@ export type EditableProjectFields = {
   name: string;
   description: string | null;
   boardUrl: string | null;
+  projectUrl: string | null;
+  githubRepoFullName: string | null;
   prdPdfUrl: string | null;
   ownerUserId: string | null;
   startDate: Date | null;
@@ -226,6 +229,25 @@ function EditProjectForm({
         ) : null}
       </div>
       <div className="flex flex-col gap-2">
+        <Label htmlFor="edit-project-project-url">Project URL (optional)</Label>
+        <Input
+          id="edit-project-project-url"
+          name="projectUrl"
+          type="url"
+          defaultValue={project.projectUrl ?? ""}
+          placeholder="https://product.example.com"
+          autoComplete="off"
+          disabled={pending || uploading}
+        />
+        <p className="text-muted-foreground text-xs">
+          Public website or product link for this project.
+        </p>
+      </div>
+      <GitHubRepoSelectField
+        disabled={pending || uploading}
+        defaultFullName={project.githubRepoFullName}
+      />
+      <div className="flex flex-col gap-2">
         <Label htmlFor="edit-project-board-url">Board URL (optional)</Label>
         <Input
           id="edit-project-board-url"
@@ -283,7 +305,7 @@ export function EditProjectDialog({
       <Button type="button" variant="outline" onClick={() => setOpen(true)}>
         Edit project
       </Button>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[min(90dvh,44rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit project</DialogTitle>
           <DialogDescription>

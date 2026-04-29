@@ -9,6 +9,10 @@ import {
   projectCollaborators,
   projects,
 } from "@/db";
+import {
+  normalizeGithubRepoFullName,
+  normalizeProjectUrl,
+} from "@/lib/project-url-fields";
 
 export type ProjectActionState = {
   error?: string;
@@ -26,6 +30,9 @@ export async function createProject(
   const name = formData.get("name")?.toString().trim() ?? "";
   const description = formData.get("description")?.toString().trim() || null;
   const boardUrl = formData.get("boardUrl")?.toString().trim() || null;
+  const projectUrlRaw = formData.get("projectUrl")?.toString() ?? "";
+  const githubRepoRaw =
+    formData.get("githubRepoFullName")?.toString() ?? "";
   const prdPdfUrl = formData.get("prdPdfUrl")?.toString().trim() || null;
   const ownerUserIdRaw = formData.get("ownerUserId")?.toString().trim() || "";
   const ownerUserId = ownerUserIdRaw || null;
@@ -45,6 +52,15 @@ export async function createProject(
     return { error: "Project name is required." };
   }
 
+  const projectUrlNorm = normalizeProjectUrl(projectUrlRaw);
+  if (projectUrlNorm.error) {
+    return { error: projectUrlNorm.error };
+  }
+  const githubRepoNorm = normalizeGithubRepoFullName(githubRepoRaw);
+  if (githubRepoNorm.error) {
+    return { error: githubRepoNorm.error };
+  }
+
   try {
     const [newProject] = await db
       .insert(projects)
@@ -53,6 +69,8 @@ export async function createProject(
       name,
       description,
       boardUrl,
+      projectUrl: projectUrlNorm.value,
+      githubRepoFullName: githubRepoNorm.value,
       prdPdfUrl,
       ownerUserId,
       startDate,
@@ -99,6 +117,9 @@ export async function updateProject(
   const description =
     formData.get("description")?.toString().trim() || null;
   const boardUrl = formData.get("boardUrl")?.toString().trim() || null;
+  const projectUrlRaw = formData.get("projectUrl")?.toString() ?? "";
+  const githubRepoRaw =
+    formData.get("githubRepoFullName")?.toString() ?? "";
   const prdPdfUrl = formData.get("prdPdfUrl")?.toString().trim() || null;
   const ownerUserIdRaw = formData.get("ownerUserId")?.toString().trim() || "";
   const ownerUserId = ownerUserIdRaw || null;
@@ -110,6 +131,15 @@ export async function updateProject(
   const endDateRaw = formData.get("endDate")?.toString().trim() || "";
   const startDate = startDateRaw ? new Date(startDateRaw) : null;
   const endDate = endDateRaw ? new Date(endDateRaw) : null;
+
+  const projectUrlNorm = normalizeProjectUrl(projectUrlRaw);
+  if (projectUrlNorm.error) {
+    return { error: projectUrlNorm.error };
+  }
+  const githubRepoNorm = normalizeGithubRepoFullName(githubRepoRaw);
+  if (githubRepoNorm.error) {
+    return { error: githubRepoNorm.error };
+  }
 
   if (!organizationSlug || !projectId) {
     return { error: "Missing project context." };
@@ -142,6 +172,8 @@ export async function updateProject(
           name,
           description,
           boardUrl,
+          projectUrl: projectUrlNorm.value,
+          githubRepoFullName: githubRepoNorm.value,
           prdPdfUrl,
           ownerUserId,
           startDate,
