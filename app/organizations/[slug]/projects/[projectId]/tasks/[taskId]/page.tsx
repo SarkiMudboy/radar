@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,6 +7,7 @@ import { DeleteTaskDialog } from "@/components/projects/delete-task-dialog";
 import { EditTaskDialog, type EditableTask } from "@/components/projects/edit-task-dialog";
 import { MilestoneStatusBadge } from "@/components/milestones/milestone-status-badge";
 import { TaskSeverityBadge } from "@/components/projects/task-severity-badge";
+import { Button } from "@/components/ui/button";
 import {
   db,
   organizations,
@@ -105,6 +106,18 @@ export default async function TaskDetailPage({ params }: PageProps) {
     .where(eq(taskBlockers.taskId, taskRow.id))
     .orderBy(asc(taskBlockers.createdAt));
 
+  const subtaskCountRow = await db
+    .select({ n: count() })
+    .from(tasks)
+    .where(
+      and(
+        eq(tasks.projectId, project.id),
+        eq(tasks.parentTaskId, taskRow.id),
+        isNull(tasks.archivedAt),
+      ),
+    );
+  const subtaskCount = Number(subtaskCountRow[0]?.n ?? 0);
+
   const topTaskRows = await db
     .select({ id: tasks.id, title: tasks.title })
     .from(tasks)
@@ -138,6 +151,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
 
   const projectHref = `/organizations/${org.slug}/projects/${project.id}`;
   const tasksHref = `${projectHref}/tasks`;
+  const subtasksHref = `${projectHref}/tasks/${taskRow.id}/tasks`;
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10">
@@ -145,7 +159,13 @@ export default async function TaskDetailPage({ params }: PageProps) {
         <Link href={tasksHref} className="text-muted-foreground text-sm hover:underline">
           ← Tasks
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" render={<Link href={subtasksHref} />}>
+            Tasks
+            <span className="text-muted-foreground ml-1 text-xs tabular-nums">
+              ({subtaskCount})
+            </span>
+          </Button>
           <EditTaskDialog
             organizationSlug={org.slug}
             projectId={project.id}

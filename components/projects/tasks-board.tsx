@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { AddTaskDialog } from "@/components/projects/add-task-dialog";
+import { AddSubtaskDialog } from "@/components/projects/add-subtask-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -551,12 +552,16 @@ export function TasksBoard({
   tasks,
   users,
   parentTaskOptions = [],
+  createUnderTaskId,
+  createUnderTaskTitle,
 }: {
   organizationSlug: string;
   projectId: string;
   tasks: TaskBoardRow[];
   users: { id: string; name: string; email: string }[];
   parentTaskOptions?: { id: string; title: string }[];
+  createUnderTaskId?: string;
+  createUnderTaskTitle?: string;
 }) {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -950,7 +955,7 @@ export function TasksBoard({
                 setAddForStatus((cur) => (cur === "not_started" ? null : "not_started"))
               }
             >
-              + Add task
+              + Add {createUnderTaskId ? "subtask" : "task"}
             </Button>
           </div>
           <TaskBoardTable
@@ -985,17 +990,32 @@ export function TasksBoard({
           ))}
         </>
       )}
-      <AddTaskDialog
-        organizationSlug={organizationSlug}
-        projectId={projectId}
-        users={users}
-        parentTaskOptions={parentTaskOptions}
-        lockedStatus={addForStatus ?? "not_started"}
-        open={addForStatus !== null}
-        onOpenChange={(next) => {
-          if (!next) setAddForStatus(null);
-        }}
-      />
+      {createUnderTaskId ? (
+        <AddSubtaskDialog
+          organizationSlug={organizationSlug}
+          projectId={projectId}
+          parentTaskId={createUnderTaskId}
+          parentTaskTitle={createUnderTaskTitle ?? "this task"}
+          users={users}
+          lockedStatus={addForStatus ?? "not_started"}
+          open={addForStatus !== null}
+          onOpenChange={(next) => {
+            if (!next) setAddForStatus(null);
+          }}
+        />
+      ) : (
+        <AddTaskDialog
+          organizationSlug={organizationSlug}
+          projectId={projectId}
+          users={users}
+          parentTaskOptions={parentTaskOptions}
+          lockedStatus={addForStatus ?? "not_started"}
+          open={addForStatus !== null}
+          onOpenChange={(next) => {
+            if (!next) setAddForStatus(null);
+          }}
+        />
+      )}
     </div>
   );
 }
