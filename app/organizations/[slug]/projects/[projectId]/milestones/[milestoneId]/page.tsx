@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { MilestoneDetailActions } from "@/components/milestones/milestone-detail-actions";
 import { MilestoneStatusBadge } from "@/components/milestones/milestone-status-badge";
+import { Button } from "@/components/ui/button";
 import { db, milestones, organizations, projects } from "@/db";
 import type { MilestoneStatus } from "@/lib/milestone-status";
 
@@ -93,17 +94,30 @@ export default async function MilestoneDetailPage({ params }: PageProps) {
           </div>
         </div>
         {!archived ? (
-          <MilestoneDetailActions
-            organizationSlug={data.orgSlug}
-            projectId={projectId}
-            milestone={{
-              id: m.id,
-              name: m.name,
-              description: m.description,
-              timeline: m.timeline,
-              status,
-            }}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              render={
+                <Link
+                  href={`/organizations/${data.orgSlug}/projects/${projectId}/milestones/${m.id}/tasks`}
+                />
+              }
+            >
+              Tasks
+            </Button>
+            <MilestoneDetailActions
+              organizationSlug={data.orgSlug}
+              projectId={projectId}
+              milestone={{
+                id: m.id,
+                name: m.name,
+                description: m.description,
+                timeline: m.timeline,
+                status,
+              }}
+            />
+          </div>
         ) : null}
       </header>
 

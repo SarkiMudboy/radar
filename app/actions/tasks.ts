@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import {
   db,
+  milestones,
   organizations,
   projects,
   taskAssignees,
@@ -19,8 +20,25 @@ export type TaskActionState = {
   success?: boolean;
 } | null;
 
-function revalidateProjectTasks(organizationSlug: string, projectId: string) {
+async function revalidateProjectTaskViews(
+  organizationSlug: string,
+  projectId: string,
+) {
   revalidatePath(`/organizations/${organizationSlug}/projects/${projectId}`);
+  revalidatePath(
+    `/organizations/${organizationSlug}/projects/${projectId}/tasks`,
+  );
+
+  const rows = await db
+    .select({ id: milestones.id })
+    .from(milestones)
+    .where(eq(milestones.projectId, projectId));
+
+  for (const r of rows) {
+    revalidatePath(
+      `/organizations/${organizationSlug}/projects/${projectId}/milestones/${r.id}/tasks`,
+    );
+  }
 }
 
 function revalidateTaskDetail(
@@ -51,6 +69,21 @@ async function assertProjectInOrg(
   return row[0]?.id ?? null;
 }
 
+async function assertMilestoneInProject(
+  projectId: string,
+  milestoneId: string,
+) {
+  const row = await db.query.milestones.findFirst({
+    where: and(
+      eq(milestones.id, milestoneId),
+      eq(milestones.projectId, projectId),
+      isNull(milestones.archivedAt),
+    ),
+    columns: { id: true },
+  });
+  return row?.id ?? null;
+}
+
 export async function createTask(
   _prev: TaskActionState,
   formData: FormData,
@@ -68,6 +101,9 @@ export async function createTask(
   const parentTaskIdRaw =
     formData.get("parentTaskId")?.toString().trim() || "";
   const parentTaskId = parentTaskIdRaw || null;
+  const milestoneIdRaw =
+    formData.get("milestoneId")?.toString().trim() || "";
+  const milestoneId = milestoneIdRaw || null;
   const assigneeIds = [
     ...new Set(
       formData
@@ -110,6 +146,13 @@ export async function createTask(
     }
   }
 
+  if (milestoneId) {
+    const ok = await assertMilestoneInProject(projectId, milestoneId);
+    if (!ok) {
+      return { error: "Milestone not found." };
+    }
+  }
+
   const tags = tagsRaw
     .split(/[,]+/)
     .map((t) => t.trim())
@@ -140,6 +183,7 @@ export async function createTask(
           tags: tags.length > 0 ? tags : null,
           dueDate,
           progressPct,
+          milestoneId,
           parentTaskId,
         })
         .returning({ id: tasks.id });
@@ -166,7 +210,7 @@ export async function createTask(
     return { error: "Could not create the task." };
   }
 
-  revalidateProjectTasks(organizationSlug, projectId);
+  await revalidateProjectTaskViews(organizationSlug, projectId);
   return { success: true };
 }
 
@@ -214,7 +258,7 @@ export async function updateTaskStatus(
     return { error: "Could not update status." };
   }
 
-  revalidateProjectTasks(organizationSlug, projectId);
+  await revalidateProjectTaskViews(organizationSlug, projectId);
   revalidateTaskDetail(organizationSlug, projectId, taskId);
   return { success: true };
 }
@@ -237,6 +281,9 @@ export async function updateTask(
   const parentTaskIdRaw =
     formData.get("parentTaskId")?.toString().trim() || "";
   const parentTaskId = parentTaskIdRaw || null;
+  const milestoneIdRaw =
+    formData.get("milestoneId")?.toString().trim() || "";
+  const milestoneId = milestoneIdRaw || null;
   const assigneeIds = [
     ...new Set(
       formData
@@ -294,6 +341,13 @@ export async function updateTask(
     }
   }
 
+  if (milestoneId) {
+    const ok = await assertMilestoneInProject(projectId, milestoneId);
+    if (!ok) {
+      return { error: "Milestone not found." };
+    }
+  }
+
   const tags = tagsRaw
     .split(/[,]+/)
     .map((t) => t.trim())
@@ -322,6 +376,7 @@ export async function updateTask(
           severity: severityRaw,
           tags: tags.length > 0 ? tags : null,
           dueDate,
+          milestoneId,
           parentTaskId,
           ...(progressPct == null ? {} : { progressPct }),
           updatedAt: new Date(),
@@ -347,7 +402,7 @@ export async function updateTask(
     return { error: "Could not update the task." };
   }
 
-  revalidateProjectTasks(organizationSlug, projectId);
+  await revalidateProjectTaskViews(organizationSlug, projectId);
   revalidateTaskDetail(organizationSlug, projectId, taskId);
   return { success: true };
 }
@@ -395,7 +450,7 @@ export async function deleteTask(
     return { error: "Could not delete the task." };
   }
 
-  revalidateProjectTasks(organizationSlug, projectId);
+  await revalidateProjectTaskViews(organizationSlug, projectId);
   revalidateTaskDetail(organizationSlug, projectId, taskId);
   return { success: true };
 }

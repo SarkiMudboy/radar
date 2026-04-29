@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { TasksBoard, type TaskBoardRow } from "@/components/projects/tasks-board";
 import {
   db,
+  milestones,
   organizations,
   projects,
   taskAssignees,
@@ -167,6 +168,17 @@ export default async function ProjectTasksPage({ params }: PageProps) {
     title: t.title,
   }));
 
+  const milestoneRows = await db
+    .select({ id: milestones.id, name: milestones.name })
+    .from(milestones)
+    .where(
+      and(
+        eq(milestones.projectId, project.id),
+        isNull(milestones.archivedAt),
+      ),
+    )
+    .orderBy(asc(milestones.name));
+
   const projectHref = `/organizations/${org.slug}/projects/${project.id}`;
 
   return (
@@ -192,6 +204,7 @@ export default async function ProjectTasksPage({ params }: PageProps) {
           tasks={taskBoardRows}
           users={orgUsersForTasks}
           parentTaskOptions={parentTaskOptions}
+          milestoneOptions={milestoneRows}
         />
       </div>
     </div>

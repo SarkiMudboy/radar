@@ -49,17 +49,22 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   tasks: many(tasks),
 }));
 
-export const milestonesRelations = relations(milestones, ({ one }) => ({
+export const milestonesRelations = relations(milestones, ({ one, many }) => ({
   project: one(projects, {
     fields: [milestones.projectId],
     references: [projects.id],
   }),
+  tasks: many(tasks),
 }));
 
 export const tasksRelations = relations(tasks, ({ one, many }) => ({
   project: one(projects, {
     fields: [tasks.projectId],
     references: [projects.id],
+  }),
+  milestone: one(milestones, {
+    fields: [tasks.milestoneId],
+    references: [milestones.id],
   }),
   parent: one(tasks, {
     fields: [tasks.parentTaskId],

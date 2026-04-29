@@ -552,6 +552,8 @@ export function TasksBoard({
   tasks,
   users,
   parentTaskOptions = [],
+  milestoneOptions = [],
+  lockedMilestoneId = null,
   createUnderTaskId,
   createUnderTaskTitle,
 }: {
@@ -560,6 +562,8 @@ export function TasksBoard({
   tasks: TaskBoardRow[];
   users: { id: string; name: string; email: string }[];
   parentTaskOptions?: { id: string; title: string }[];
+  milestoneOptions?: { id: string; name: string }[];
+  lockedMilestoneId?: string | null;
   createUnderTaskId?: string;
   createUnderTaskTitle?: string;
 }) {
@@ -997,6 +1001,7 @@ export function TasksBoard({
           parentTaskId={createUnderTaskId}
           parentTaskTitle={createUnderTaskTitle ?? "this task"}
           users={users}
+          lockedMilestoneId={lockedMilestoneId}
           lockedStatus={addForStatus ?? "not_started"}
           open={addForStatus !== null}
           onOpenChange={(next) => {
@@ -1009,6 +1014,8 @@ export function TasksBoard({
           projectId={projectId}
           users={users}
           parentTaskOptions={parentTaskOptions}
+          milestoneOptions={milestoneOptions}
+          lockedMilestoneId={lockedMilestoneId}
           lockedStatus={addForStatus ?? "not_started"}
           open={addForStatus !== null}
           onOpenChange={(next) => {

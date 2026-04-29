@@ -10,7 +10,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { milestoneStatusEnum } from "./milestones";
+import { milestoneStatusEnum, milestones } from "./milestones";
 import { projects } from "./projects";
 import { users } from "./users";
 
@@ -38,6 +38,10 @@ export const tasks = pgTable(
     dueDate: date("due_date", { mode: "date" }),
     /** 0–100 completion for progress ring in UI. */
     progressPct: integer("progress_pct").notNull().default(0),
+    /** Optional delivery milestone this task belongs to. */
+    milestoneId: uuid("milestone_id").references(() => milestones.id, {
+      onDelete: "set null",
+    }),
     parentTaskId: uuid("parent_task_id"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

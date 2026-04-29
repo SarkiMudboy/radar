@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { TasksBoard, type TaskBoardRow } from "@/components/projects/tasks-board";
 import {
   db,
+  milestones,
   organizations,
   projects,
   taskAssignees,
@@ -19,35 +20,40 @@ import type { TaskSeverity } from "@/lib/task-severity";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  params: Promise<{ slug: string; projectId: string; taskId: string }>;
+  params: Promise<{ slug: string; projectId: string; milestoneId: string }>;
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug, projectId, taskId } = await params;
-  const org = await db.query.organizations.findFirst({
-    where: eq(organizations.slug, slug),
-  });
-  if (!org) return { title: "Subtasks · Radar" };
+  const { slug, projectId, milestoneId } = await params;
+  const row = await db
+    .select({
+      milestoneName: milestones.name,
+      projectName: projects.name,
+      orgName: organizations.name,
+    })
+    .from(milestones)
+    .innerJoin(projects, eq(milestones.projectId, projects.id))
+    .innerJoin(organizations, eq(projects.organizationId, organizations.id))
+    .where(
+      and(
+        eq(milestones.id, milestoneId),
+        eq(projects.id, projectId),
+        eq(organizations.slug, slug),
+        isNull(milestones.archivedAt),
+      ),
+    )
+    .limit(1);
 
-  const project = await db.query.projects.findFirst({
-    where: and(eq(projects.id, projectId), eq(projects.organizationId, org.id)),
-  });
-  if (!project) return { title: "Subtasks · Radar" };
-
-  const parent = await db.query.tasks.findFirst({
-    where: and(eq(tasks.id, taskId), eq(tasks.projectId, project.id), isNull(tasks.archivedAt)),
-    columns: { title: true },
-  });
+  const r = row[0];
+  if (!r) return { title: "Milestone tasks · Radar" };
 
   return {
-    title: parent?.title
-      ? `Subtasks · ${parent.title} · ${project.name} · ${org.name} · Radar`
-      : `Subtasks · ${project.name} · ${org.name} · Radar`,
+    title: `Tasks · ${r.milestoneName} · ${r.projectName} · ${r.orgName} · Radar`,
   };
 }
 
-export default async function TaskSubtasksPage({ params }: PageProps) {
-  const { slug, projectId, taskId } = await params;
+export default async function MilestoneTasksPage({ params }: PageProps) {
+  const { slug, projectId, milestoneId } = await params;
 
   const org = await db.query.organizations.findFirst({
     where: eq(organizations.slug, slug),
@@ -59,11 +65,14 @@ export default async function TaskSubtasksPage({ params }: PageProps) {
   });
   if (!project) notFound();
 
-  const parentTask = await db.query.tasks.findFirst({
-    where: and(eq(tasks.id, taskId), eq(tasks.projectId, project.id), isNull(tasks.archivedAt)),
-    columns: { id: true, title: true, milestoneId: true },
+  const milestone = await db.query.milestones.findFirst({
+    where: and(
+      eq(milestones.id, milestoneId),
+      eq(milestones.projectId, project.id),
+      isNull(milestones.archivedAt),
+    ),
   });
-  if (!parentTask) notFound();
+  if (!milestone) notFound();
 
   const orgUsersForTasks = await db
     .select({
@@ -75,7 +84,7 @@ export default async function TaskSubtasksPage({ params }: PageProps) {
     .where(eq(users.organizationId, org.id))
     .orderBy(asc(users.name));
 
-  const subtaskRows = await db
+  const topTaskRows = await db
     .select({
       id: tasks.id,
       title: tasks.title,
@@ -90,19 +99,20 @@ export default async function TaskSubtasksPage({ params }: PageProps) {
     .where(
       and(
         eq(tasks.projectId, project.id),
-        eq(tasks.parentTaskId, parentTask.id),
+        eq(tasks.milestoneId, milestoneId),
+        isNull(tasks.parentTaskId),
         isNull(tasks.archivedAt),
       ),
     )
     .orderBy(asc(tasks.createdAt));
 
-  const subtaskIds = subtaskRows.map((t) => t.id);
+  const taskIds = topTaskRows.map((t) => t.id);
 
   const assigneeByTask: Record<
     string,
     { id: string; name: string; profileImageUrl: string | null }[]
   > = {};
-  if (subtaskIds.length > 0) {
+  if (taskIds.length > 0) {
     const assigneeRows = await db
       .select({
         taskId: taskAssignees.taskId,
@@ -112,7 +122,7 @@ export default async function TaskSubtasksPage({ params }: PageProps) {
       })
       .from(taskAssignees)
       .innerJoin(users, eq(taskAssignees.userId, users.id))
-      .where(inArray(taskAssignees.taskId, subtaskIds));
+      .where(inArray(taskAssignees.taskId, taskIds));
     for (const r of assigneeRows) {
       if (!assigneeByTask[r.taskId]) assigneeByTask[r.taskId] = [];
       assigneeByTask[r.taskId].push({
@@ -124,11 +134,11 @@ export default async function TaskSubtasksPage({ params }: PageProps) {
   }
 
   const blockerByTask: Record<string, number> = {};
-  if (subtaskIds.length > 0) {
+  if (taskIds.length > 0) {
     const blockerRows = await db
       .select({ taskId: taskBlockers.taskId, n: count() })
       .from(taskBlockers)
-      .where(inArray(taskBlockers.taskId, subtaskIds))
+      .where(inArray(taskBlockers.taskId, taskIds))
       .groupBy(taskBlockers.taskId);
     for (const b of blockerRows) {
       blockerByTask[b.taskId] = Number(b.n);
@@ -136,7 +146,7 @@ export default async function TaskSubtasksPage({ params }: PageProps) {
   }
 
   const subtaskByTask: Record<string, number> = {};
-  if (subtaskIds.length > 0) {
+  if (taskIds.length > 0) {
     const subRows = await db
       .select({ parentTaskId: tasks.parentTaskId, n: count() })
       .from(tasks)
@@ -144,7 +154,7 @@ export default async function TaskSubtasksPage({ params }: PageProps) {
         and(
           eq(tasks.projectId, project.id),
           isNull(tasks.archivedAt),
-          inArray(tasks.parentTaskId, subtaskIds),
+          inArray(tasks.parentTaskId, taskIds),
         ),
       )
       .groupBy(tasks.parentTaskId);
@@ -155,7 +165,7 @@ export default async function TaskSubtasksPage({ params }: PageProps) {
     }
   }
 
-  const taskBoardRows: TaskBoardRow[] = subtaskRows.map((t) => ({
+  const taskBoardRows: TaskBoardRow[] = topTaskRows.map((t) => ({
     id: t.id,
     title: t.title,
     description: t.description,
@@ -174,24 +184,26 @@ export default async function TaskSubtasksPage({ params }: PageProps) {
     subtaskCount: subtaskByTask[t.id] ?? 0,
   }));
 
-  const projectHref = `/organizations/${org.slug}/projects/${project.id}`;
-  const taskHref = `${projectHref}/tasks/${parentTask.id}`;
+  const parentTaskOptions = topTaskRows.map((t) => ({
+    id: t.id,
+    title: t.title,
+  }));
+
+  const milestoneHref = `/organizations/${org.slug}/projects/${project.id}/milestones/${milestone.id}`;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href={taskHref} className="text-muted-foreground text-sm hover:underline">
-          ← {parentTask.title}
-        </Link>
-        <Link href={`${projectHref}/tasks`} className="text-muted-foreground text-sm hover:underline">
-          Project tasks
-        </Link>
-      </div>
+      <Link
+        href={milestoneHref}
+        className="text-muted-foreground text-sm hover:underline"
+      >
+        ← {milestone.name}
+      </Link>
 
       <header className="mt-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Subtasks</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Tasks</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          {parentTask.title} · {project.name} · {org.name}
+          {milestone.name} · {project.name} · {org.name}
         </p>
       </header>
 
@@ -201,13 +213,10 @@ export default async function TaskSubtasksPage({ params }: PageProps) {
           projectId={project.id}
           tasks={taskBoardRows}
           users={orgUsersForTasks}
-          parentTaskOptions={[]}
-          lockedMilestoneId={parentTask.milestoneId ?? null}
-          createUnderTaskId={parentTask.id}
-          createUnderTaskTitle={parentTask.title}
+          parentTaskOptions={parentTaskOptions}
+          lockedMilestoneId={milestoneId}
         />
       </div>
     </div>
   );
 }
-

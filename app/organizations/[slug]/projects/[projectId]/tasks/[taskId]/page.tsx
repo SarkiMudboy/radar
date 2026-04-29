@@ -10,6 +10,7 @@ import { TaskSeverityBadge } from "@/components/projects/task-severity-badge";
 import { Button } from "@/components/ui/button";
 import {
   db,
+  milestones,
   organizations,
   projects,
   taskAssignees,
@@ -130,6 +131,28 @@ export default async function TaskDetailPage({ params }: PageProps) {
     )
     .orderBy(asc(tasks.createdAt));
 
+  const milestoneOptions = await db
+    .select({ id: milestones.id, name: milestones.name })
+    .from(milestones)
+    .where(
+      and(
+        eq(milestones.projectId, project.id),
+        isNull(milestones.archivedAt),
+      ),
+    )
+    .orderBy(asc(milestones.name));
+
+  const linkedMilestone =
+    taskRow.milestoneId == null
+      ? null
+      : await db.query.milestones.findFirst({
+          where: and(
+            eq(milestones.id, taskRow.milestoneId),
+            eq(milestones.projectId, project.id),
+          ),
+          columns: { id: true, name: true, archivedAt: true },
+        });
+
   const editable: EditableTask = {
     id: taskRow.id,
     title: taskRow.title,
@@ -144,6 +167,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
           ? taskRow.dueDate
           : new Date(String(taskRow.dueDate)),
     progressPct: taskRow.progressPct ?? 0,
+    milestoneId: taskRow.milestoneId ?? null,
     parentTaskId: taskRow.parentTaskId ?? null,
     assigneeIds: assigneeRows.map((a) => a.id),
     blockers: blockers.map((b) => b.note),
@@ -172,6 +196,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
             task={editable}
             users={orgUsersForTasks}
             parentTaskOptions={topTaskRows}
+            milestoneOptions={milestoneOptions}
           />
           <DeleteTaskDialog
             organizationSlug={org.slug}
@@ -198,6 +223,23 @@ export default async function TaskDetailPage({ params }: PageProps) {
         <section className="rounded-lg border border-border bg-card/30 p-4 ring-1 ring-foreground/6">
           <h2 className="text-sm font-semibold tracking-tight">Details</h2>
           <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground text-xs">Milestone</dt>
+              <dd className="mt-1 text-sm">
+                {linkedMilestone && !linkedMilestone.archivedAt ? (
+                  <Link
+                    href={`/organizations/${org.slug}/projects/${project.id}/milestones/${linkedMilestone.id}`}
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    {linkedMilestone.name}
+                  </Link>
+                ) : linkedMilestone ? (
+                  <span>{linkedMilestone.name} (archived)</span>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </dd>
+            </div>
             <div>
               <dt className="text-muted-foreground text-xs">Due date</dt>
               <dd className="mt-1 text-sm">{formatDue(editable.dueDate)}</dd>

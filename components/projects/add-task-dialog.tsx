@@ -41,6 +41,8 @@ function AddTaskForm({
   projectId,
   users,
   parentTaskOptions,
+  milestoneOptions,
+  lockedMilestoneId,
   lockedStatus,
   onSuccess,
   onCancel,
@@ -49,6 +51,8 @@ function AddTaskForm({
   projectId: string;
   users: { id: string; name: string; email: string }[];
   parentTaskOptions: { id: string; title: string }[];
+  milestoneOptions: { id: string; name: string }[];
+  lockedMilestoneId: string | null;
   lockedStatus: MilestoneStatus;
   onSuccess: () => void;
   onCancel: () => void;
@@ -62,6 +66,7 @@ function AddTaskForm({
   const tagsId = useId();
   const blockersId = useId();
   const parentId = useId();
+  const milestoneSelectId = useId();
 
   const [state, formAction, pending] = useActionState(createTask, null);
 
@@ -81,6 +86,9 @@ function AddTaskForm({
       <input name="projectId" type="hidden" value={projectId} />
       <input name="status" type="hidden" value={lockedStatus} />
       <input name="progressPct" type="hidden" value="0" />
+      {lockedMilestoneId ? (
+        <input name="milestoneId" type="hidden" value={lockedMilestoneId} />
+      ) : null}
 
       <div className="flex flex-col gap-2">
         <Label htmlFor={titleId}>Title</Label>
@@ -126,6 +134,25 @@ function AddTaskForm({
           <Input id={dueId} name="dueDate" type="date" disabled={pending} />
         </div>
       </div>
+      {!lockedMilestoneId && milestoneOptions.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={milestoneSelectId}>Milestone (optional)</Label>
+          <select
+            id={milestoneSelectId}
+            name="milestoneId"
+            className={selectClass}
+            defaultValue=""
+            disabled={pending}
+          >
+            <option value="">None</option>
+            {milestoneOptions.map((ms) => (
+              <option key={ms.id} value={ms.id}>
+                {ms.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
       <div className="flex flex-col gap-2">
         <Label htmlFor={assigneeId}>Assignees (optional)</Label>
         <select
@@ -209,6 +236,8 @@ export function AddTaskDialog({
   projectId,
   users,
   parentTaskOptions = [],
+  milestoneOptions = [],
+  lockedMilestoneId = null,
   lockedStatus,
   open,
   onOpenChange,
@@ -217,6 +246,8 @@ export function AddTaskDialog({
   projectId: string;
   users: { id: string; name: string; email: string }[];
   parentTaskOptions?: { id: string; title: string }[];
+  milestoneOptions?: { id: string; name: string }[];
+  lockedMilestoneId?: string | null;
   lockedStatus: MilestoneStatus;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -227,7 +258,7 @@ export function AddTaskDialog({
     if (open) {
       setFormKey((k) => k + 1);
     }
-  }, [open, lockedStatus]);
+  }, [open, lockedStatus, lockedMilestoneId]);
 
   const handleSuccess = useCallback(() => {
     onOpenChange(false);
@@ -252,6 +283,8 @@ export function AddTaskDialog({
           projectId={projectId}
           users={users}
           parentTaskOptions={parentTaskOptions}
+          milestoneOptions={milestoneOptions}
+          lockedMilestoneId={lockedMilestoneId}
           lockedStatus={lockedStatus}
           onSuccess={handleSuccess}
           onCancel={() => onOpenChange(false)}

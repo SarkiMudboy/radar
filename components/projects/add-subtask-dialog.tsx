@@ -37,6 +37,7 @@ function AddSubtaskForm({
   projectId,
   parentTaskId,
   users,
+  lockedMilestoneId,
   lockedStatus,
   onSuccess,
   onCancel,
@@ -45,6 +46,7 @@ function AddSubtaskForm({
   projectId: string;
   parentTaskId: string;
   users: { id: string; name: string; email: string }[];
+  lockedMilestoneId: string | null;
   lockedStatus: MilestoneStatus;
   onSuccess: () => void;
   onCancel: () => void;
@@ -77,6 +79,9 @@ function AddSubtaskForm({
       <input name="parentTaskId" type="hidden" value={parentTaskId} />
       <input name="status" type="hidden" value={lockedStatus} />
       <input name="progressPct" type="hidden" value="0" />
+      {lockedMilestoneId ? (
+        <input name="milestoneId" type="hidden" value={lockedMilestoneId} />
+      ) : null}
 
       <div className="flex flex-col gap-2">
         <Label htmlFor={titleId}>Title</Label>
@@ -193,6 +198,7 @@ export function AddSubtaskDialog({
   parentTaskId,
   parentTaskTitle,
   users,
+  lockedMilestoneId = null,
   lockedStatus,
   open,
   onOpenChange,
@@ -202,6 +208,7 @@ export function AddSubtaskDialog({
   parentTaskId: string;
   parentTaskTitle: string;
   users: { id: string; name: string; email: string }[];
+  lockedMilestoneId?: string | null;
   lockedStatus: MilestoneStatus;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -234,6 +241,7 @@ export function AddSubtaskDialog({
           projectId={projectId}
           parentTaskId={parentTaskId}
           users={users}
+          lockedMilestoneId={lockedMilestoneId}
           lockedStatus={lockedStatus}
           onSuccess={handleSuccess}
           onCancel={() => onOpenChange(false)}

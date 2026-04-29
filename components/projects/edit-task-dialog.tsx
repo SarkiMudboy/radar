@@ -41,6 +41,7 @@ export type EditableTask = {
   tags: string[] | null;
   dueDate: Date | null;
   progressPct: number;
+  milestoneId: string | null;
   parentTaskId: string | null;
   assigneeIds: string[];
   blockers: string[];
@@ -52,12 +53,14 @@ export function EditTaskDialog({
   task,
   users,
   parentTaskOptions,
+  milestoneOptions,
 }: {
   organizationSlug: string;
   projectId: string;
   task: EditableTask;
   users: { id: string; name: string; email: string }[];
   parentTaskOptions: { id: string; title: string }[];
+  milestoneOptions: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -73,6 +76,7 @@ export function EditTaskDialog({
   const blockersId = useId();
   const parentId = useId();
   const progressId = useId();
+  const milestoneSelectId = useId();
 
   const [state, formAction, pending] = useActionState(updateTask, null);
 
@@ -109,6 +113,13 @@ export function EditTaskDialog({
           <input name="organizationSlug" type="hidden" value={organizationSlug} />
           <input name="projectId" type="hidden" value={projectId} />
           <input name="taskId" type="hidden" value={task.id} />
+          {milestoneOptions.length === 0 ? (
+            <input
+              name="milestoneId"
+              type="hidden"
+              value={task.milestoneId ?? ""}
+            />
+          ) : null}
 
           <div className="flex flex-col gap-2">
             <Label htmlFor={titleId}>Title</Label>
@@ -228,6 +239,26 @@ export function EditTaskDialog({
               disabled={pending}
             />
           </div>
+
+          {milestoneOptions.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={milestoneSelectId}>Milestone (optional)</Label>
+              <select
+                id={milestoneSelectId}
+                name="milestoneId"
+                className={selectClass}
+                defaultValue={task.milestoneId ?? ""}
+                disabled={pending}
+              >
+                <option value="">None</option>
+                {milestoneOptions.map((ms) => (
+                  <option key={ms.id} value={ms.id}>
+                    {ms.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
 
           {parentTaskOptions.length > 0 ? (
             <div className="flex flex-col gap-2">
