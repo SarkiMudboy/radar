@@ -7,4 +7,5 @@ export * from "./projects";
 export * from "./project-collaborators";
 export * from "./milestones";
 export * from "./tasks";
+export * from "./task-github-branches";
 export * from "./relations";

@@ -1,4 +1,4 @@
-import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,6 +16,7 @@ import {
   projects,
   taskAssignees,
   taskBlockers,
+  taskGithubBranches,
   tasks,
   users,
 } from "@/db";
@@ -120,6 +121,19 @@ export default async function TaskDetailPage({ params }: PageProps) {
     );
   const subtaskCount = Number(subtaskCountRow[0]?.n ?? 0);
 
+  const githubBranchRows = await db
+    .select({
+      id: taskGithubBranches.id,
+      branchName: taskGithubBranches.branchName,
+      branchUrl: taskGithubBranches.branchUrl,
+      repoFullName: taskGithubBranches.repoFullName,
+      baseBranch: taskGithubBranches.baseBranch,
+      createdAt: taskGithubBranches.createdAt,
+    })
+    .from(taskGithubBranches)
+    .where(eq(taskGithubBranches.taskId, taskRow.id))
+    .orderBy(desc(taskGithubBranches.createdAt));
+
   const topTaskRows = await db
     .select({ id: tasks.id, title: tasks.title })
     .from(tasks)
@@ -187,6 +201,7 @@ export default async function TaskDetailPage({ params }: PageProps) {
         <div className="flex flex-wrap items-center gap-2">
           <CreateBranchDialog
             organizationSlug={org.slug}
+            projectId={project.id}
             taskId={taskRow.id}
             taskTitle={taskRow.title}
             tags={taskRow.tags ?? null}
@@ -282,6 +297,45 @@ export default async function TaskDetailPage({ params }: PageProps) {
               </dd>
             </div>
           </dl>
+        </section>
+
+        <section className="rounded-lg border border-border bg-card/30 p-4 ring-1 ring-foreground/6">
+          <h2 className="text-sm font-semibold tracking-tight">Git branches</h2>
+          <div className="mt-3">
+            {githubBranchRows.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No branches created from Radar yet. Use Create Branch above when
+                this project has a linked repository.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {githubBranchRows.map((b) => (
+                  <li
+                    key={b.id}
+                    className="flex flex-col gap-1 rounded-md border border-border/80 bg-background/40 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <code className="text-sm font-medium break-all">
+                        {b.branchName}
+                      </code>
+                      <p className="text-muted-foreground mt-0.5 text-xs">
+                        {b.repoFullName}
+                        {b.baseBranch ? ` · from ${b.baseBranch}` : null}
+                      </p>
+                    </div>
+                    <a
+                      href={b.branchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary shrink-0 text-sm underline-offset-4 hover:underline"
+                    >
+                      View on GitHub
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </section>
 
         <section className="rounded-lg border border-border bg-card/30 p-4 ring-1 ring-foreground/6">

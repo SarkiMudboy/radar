@@ -1,5 +1,14 @@
+import { and, eq, isNull } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
+import {
+  db,
+  organizations,
+  projects,
+  taskGithubBranches,
+  tasks,
+} from "@/db";
 import { getGitHubAccessToken } from "@/lib/github-token";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +18,10 @@ type CreateBranchBody = {
   repo: string;
   branchName: string;
   base: string;
+  /** When set with projectId + organizationSlug, branch is stored on the task after success. */
+  taskId?: string;
+  projectId?: string;
+  organizationSlug?: string;
 };
 
 type ErrorCode =
@@ -19,7 +32,9 @@ type ErrorCode =
   | "BRANCH_EXISTS"
   | "FORBIDDEN"
   | "GITHUB_ERROR"
-  | "NETWORK";
+  | "NETWORK"
+  | "TASK_CONTEXT_INVALID"
+  | "STORAGE_FAILED";
 
 function jsonError(
   status: number,
@@ -31,6 +46,51 @@ function jsonError(
     { error: { code, message, details } },
     { status },
   );
+}
+
+async function assertTaskMatchesRepo(params: {
+  taskId: string;
+  projectId: string;
+  organizationSlug: string;
+  owner: string;
+  repo: string;
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  const rows = await db
+    .select({
+      githubRepoFullName: projects.githubRepoFullName,
+    })
+    .from(tasks)
+    .innerJoin(projects, eq(tasks.projectId, projects.id))
+    .innerJoin(organizations, eq(projects.organizationId, organizations.id))
+    .where(
+      and(
+        eq(tasks.id, params.taskId),
+        eq(projects.id, params.projectId),
+        eq(organizations.slug, params.organizationSlug),
+        isNull(tasks.archivedAt),
+      ),
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) {
+    return {
+      ok: false,
+      message: "Task not found or does not belong to this project.",
+    };
+  }
+
+  const expected = row.githubRepoFullName?.trim().toLowerCase() ?? "";
+  const actual = `${params.owner}/${params.repo}`.toLowerCase();
+  if (!expected || expected !== actual) {
+    return {
+      ok: false,
+      message:
+        "Repository must match the GitHub repository linked to this project.",
+    };
+  }
+
+  return { ok: true };
 }
 
 function safeOwnerOrRepo(s: string): boolean {
@@ -65,6 +125,36 @@ export async function POST(req: Request) {
   }
   if (!/^[a-zA-Z0-9/_.-]+$/.test(base) || !base) {
     return jsonError(400, "VALIDATION", "Invalid base branch name.");
+  }
+
+  const taskIdOpt = body.taskId?.trim() ?? "";
+  const projectIdOpt = body.projectId?.trim() ?? "";
+  const organizationSlugOpt = body.organizationSlug?.trim() ?? "";
+  const hasAnyContext = Boolean(
+    taskIdOpt || projectIdOpt || organizationSlugOpt,
+  );
+  const hasFullContext = Boolean(
+    taskIdOpt && projectIdOpt && organizationSlugOpt,
+  );
+  if (hasAnyContext && !hasFullContext) {
+    return jsonError(
+      400,
+      "VALIDATION",
+      "Send taskId, projectId, and organizationSlug together to record branches.",
+    );
+  }
+
+  if (hasFullContext) {
+    const assert = await assertTaskMatchesRepo({
+      taskId: taskIdOpt,
+      projectId: projectIdOpt,
+      organizationSlug: organizationSlugOpt,
+      owner,
+      repo,
+    });
+    if (!assert.ok) {
+      return jsonError(400, "TASK_CONTEXT_INVALID", assert.message);
+    }
   }
 
   const token = await getGitHubAccessToken();
@@ -250,6 +340,34 @@ export async function POST(req: Request) {
   const branchUrl = `https://github.com/${owner}/${repo}/tree/${encodeURIComponent(branchName)}`;
   const comparePrUrl = `https://github.com/${owner}/${repo}/compare/${encodeURIComponent(base)}...${encodeURIComponent(branchName)}?expand=1`;
 
+  if (hasFullContext) {
+    try {
+      await db.insert(taskGithubBranches).values({
+        taskId: taskIdOpt,
+        branchName,
+        branchUrl,
+        repoFullName: `${owner}/${repo}`,
+        baseBranch: base,
+      }).onConflictDoNothing({
+        target: [
+          taskGithubBranches.taskId,
+          taskGithubBranches.branchName,
+        ],
+      });
+    } catch (err) {
+      console.error(err);
+      return jsonError(
+        500,
+        "STORAGE_FAILED",
+        "Branch was created on GitHub but could not be saved to Radar.",
+      );
+    }
+
+    revalidatePath(
+      `/organizations/${organizationSlugOpt}/projects/${projectIdOpt}/tasks/${taskIdOpt}`,
+    );
+  }
+
   return NextResponse.json({
     ok: true as const,
     branchName,
@@ -259,5 +377,6 @@ export async function POST(req: Request) {
     branchUrl,
     comparePrUrl,
     ref: `refs/heads/${branchName}`,
+    persisted: hasFullContext,
   });
 }

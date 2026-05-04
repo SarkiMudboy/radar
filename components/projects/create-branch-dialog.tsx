@@ -1,6 +1,7 @@
 "use client";
 
 import { Copy } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,13 @@ function friendlyError(code: string | undefined, message: string): string {
       return message || "Sign in with GitHub under Integrations.";
     case "NETWORK":
       return message || "Network error. Try again.";
+    case "TASK_CONTEXT_INVALID":
+      return message || "This task or repository does not match the project.";
+    case "STORAGE_FAILED":
+      return (
+        message ||
+        "Branch was created on GitHub but could not be saved. Refresh the page."
+      );
     default:
       return message || "Something went wrong.";
   }
@@ -67,18 +75,21 @@ function friendlyError(code: string | undefined, message: string): string {
 
 export function CreateBranchDialog({
   organizationSlug,
+  projectId,
   taskId,
   taskTitle,
   tags,
   repositories,
 }: {
   organizationSlug: string;
+  projectId: string;
   taskId: string;
   taskTitle: string;
   tags: string[] | null;
   /** Full names `owner/repo` from project context — do not fetch here. */
   repositories: string[];
 }) {
+  const router = useRouter();
   const baseId = useId();
   const branchInputId = `${baseId}-branch`;
   const [open, setOpen] = useState(false);
@@ -176,6 +187,9 @@ export function CreateBranchDialog({
           repo: parsed.repo,
           branchName: trimmed,
           base: baseBranch.trim() || "main",
+          taskId,
+          projectId,
+          organizationSlug,
         }),
       });
 
@@ -201,12 +215,21 @@ export function CreateBranchDialog({
       }
 
       setSuccess(data as unknown as ApiSuccess);
+      router.refresh();
     } catch {
       setError(friendlyError("NETWORK", ""));
     } finally {
       setLoading(false);
     }
-  }, [baseBranch, branchName, selectedRepoFull]);
+  }, [
+    baseBranch,
+    branchName,
+    organizationSlug,
+    projectId,
+    router,
+    selectedRepoFull,
+    taskId,
+  ]);
 
   const onFormSubmit = useCallback(
     (e: React.FormEvent) => {
