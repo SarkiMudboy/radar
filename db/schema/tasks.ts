@@ -21,6 +21,12 @@ export const taskSeverityEnum = pgEnum("task_severity", [
   "critical",
 ]);
 
+export const taskQaStatusEnum = pgEnum("task_qa_status", [
+  "not_required",
+  "to_test",
+  "tested",
+]);
+
 export const tasks = pgTable(
   "tasks",
   {
@@ -33,6 +39,8 @@ export const tasks = pgTable(
     /** Same values as milestones: not_started → shown under Backlog in UI. */
     status: milestoneStatusEnum("status").notNull().default("not_started"),
     severity: taskSeverityEnum("severity").notNull().default("medium"),
+    /** QA lifecycle for completed tasks. */
+    qaStatus: taskQaStatusEnum("qa_status").notNull().default("not_required"),
     tags: text("tags").array(),
     /** Due date for the task (optional). */
     dueDate: date("due_date", { mode: "date" }),

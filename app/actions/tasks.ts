@@ -242,16 +242,22 @@ export async function updateTaskStatus(
       eq(tasks.projectId, projectId),
       isNull(tasks.archivedAt),
     ),
-    columns: { id: true },
+    columns: { id: true, qaStatus: true },
   });
   if (!existing) {
     return { error: "Task not found." };
   }
 
   try {
+    const nextQaStatus =
+      statusRaw === "completed"
+        ? existing.qaStatus === "tested"
+          ? "tested"
+          : "to_test"
+        : "not_required";
     await db
       .update(tasks)
-      .set({ status: statusRaw, updatedAt: new Date() })
+      .set({ status: statusRaw, qaStatus: nextQaStatus, updatedAt: new Date() })
       .where(eq(tasks.id, taskId));
   } catch (err) {
     console.error(err);

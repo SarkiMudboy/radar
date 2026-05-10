@@ -20,6 +20,9 @@ export function AppNavbar({ session }: { session: Session | null }) {
           Radar
         </Link>
         <nav className="flex items-center gap-5" aria-label="Main">
+          <Link href="/qa" className={navLinkClass}>
+            QA
+          </Link>
           <Link href="/integrations" className={navLinkClass}>
             Integrations
           </Link>

@@ -6,6 +6,7 @@ import { projectCollaborators } from "./project-collaborators";
 import { projects } from "./projects";
 import { taskGithubBranches } from "./task-github-branches";
 import { taskAssignees, taskBlockers, tasks } from "./tasks";
+import { issues } from "./issues";
 import { roles } from "./roles";
 import { userRoles } from "./user-roles";
 import { users } from "./users";
@@ -48,6 +49,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   collaborators: many(projectCollaborators),
   milestones: many(milestones),
   tasks: many(tasks),
+  issues: many(issues),
 }));
 
 export const milestonesRelations = relations(milestones, ({ one, many }) => ({
@@ -78,6 +80,27 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   assignees: many(taskAssignees),
   blockers: many(taskBlockers),
   githubBranches: many(taskGithubBranches),
+  issuesAffected: many(issues, { relationName: "issueAffectedTask" }),
+}));
+
+export const issuesRelations = relations(issues, ({ one }) => ({
+  project: one(projects, {
+    fields: [issues.projectId],
+    references: [projects.id],
+  }),
+  affectedTask: one(tasks, {
+    fields: [issues.affectedTaskId],
+    references: [tasks.id],
+    relationName: "issueAffectedTask",
+  }),
+  assignee: one(users, {
+    fields: [issues.assigneeUserId],
+    references: [users.id],
+  }),
+  reporter: one(users, {
+    fields: [issues.reporterUserId],
+    references: [users.id],
+  }),
 }));
 
 export const taskGithubBranchesRelations = relations(

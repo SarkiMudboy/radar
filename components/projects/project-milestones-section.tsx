@@ -34,20 +34,29 @@ export function ProjectMilestonesSection({
   milestones: ProjectMilestoneListItem[];
 }) {
   const tasksHref = `/organizations/${organizationSlug}/projects/${projectId}/tasks`;
+  const issuesHref = `/organizations/${organizationSlug}/projects/${projectId}/issues`;
 
   return (
     <section className="mt-10">
       <div className="mb-4 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Link
-          href={tasksHref}
-          className={cn(
-            buttonVariants({ variant: "outline" }),
-            "inline-flex w-fit items-center gap-2 no-underline",
-          )}
-        >
-          <ListTodo className="size-4" aria-hidden />
-          Tasks
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={tasksHref}
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "inline-flex w-fit items-center gap-2 no-underline",
+            )}
+          >
+            <ListTodo className="size-4" aria-hidden />
+            Tasks
+          </Link>
+          <Link
+            href={issuesHref}
+            className={cn(buttonVariants({ variant: "outline" }), "no-underline")}
+          >
+            Issues
+          </Link>
+        </div>
         <AddMilestoneDialog
           organizationSlug={organizationSlug}
           projectId={projectId}

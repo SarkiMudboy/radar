@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { CreateBranchDialog } from "@/components/projects/create-branch-dialog";
 import { DeleteTaskDialog } from "@/components/projects/delete-task-dialog";
 import { EditTaskDialog, type EditableTask } from "@/components/projects/edit-task-dialog";
+import { CreateTaskIssueButton } from "@/components/issues/create-task-issue-button";
 import { MilestoneStatusBadge } from "@/components/milestones/milestone-status-badge";
 import { TaskSeverityBadge } from "@/components/projects/task-severity-badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import {
   tasks,
   users,
 } from "@/db";
+import { getAppSession } from "@/lib/auth";
 import type { MilestoneStatus } from "@/lib/milestone-status";
 import type { TaskSeverity } from "@/lib/task-severity";
 
@@ -90,6 +92,12 @@ export default async function TaskDetailPage({ params }: PageProps) {
     .from(users)
     .where(eq(users.organizationId, org.id))
     .orderBy(asc(users.name));
+
+  const session = await getAppSession();
+  const reporterUserId =
+    session?.user?.email
+      ? orgUsersForTasks.find((u) => u.email === session.user.email)?.id ?? null
+      : null;
 
   const assigneeRows = await db
     .select({
@@ -208,6 +216,15 @@ export default async function TaskDetailPage({ params }: PageProps) {
             repositories={
               project.githubRepoFullName ? [project.githubRepoFullName] : []
             }
+          />
+          <CreateTaskIssueButton
+            organizationSlug={org.slug}
+            projectId={project.id}
+            taskId={taskRow.id}
+            taskTitle={taskRow.title}
+            tasks={topTaskRows}
+            users={orgUsersForTasks}
+            reporterUserId={reporterUserId}
           />
           <Button type="button" variant="outline" render={<Link href={subtasksHref} />}>
             Tasks
